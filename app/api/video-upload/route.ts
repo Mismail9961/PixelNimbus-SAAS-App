@@ -1,8 +1,6 @@
 import { NextResponse,NextRequest } from "next/server";
 import { v2 as cloudinary } from "cloudinary";
 import { auth } from "@clerk/nextjs/server";
-import { error } from "console";
-import { buffer } from "stream/consumers";
 import { PrismaClient } from "@prisma/client";
 
 
@@ -51,7 +49,13 @@ export async function POST(request:NextRequest){
     const result = await new Promise<CloudinaryUploadResult>(
       (resolve,reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
-          {folder:"next-cloudinary-uploads"},
+          {
+            folder:"video-uploads",
+            resource_type:"video",
+            transformation:[
+              {quality:"auto",fetch_format:"mp4"}
+            ]
+          },
           (error,result)=>{
             if(error) reject(error);
             else resolve(result as CloudinaryUploadResult)
@@ -60,9 +64,21 @@ export async function POST(request:NextRequest){
         uploadStream.end(buffer)
       }
     )
-    NextResponse.json({public_id:result.public_id},{status:200})
+    const video = await prisma.video.create({
+      data:{
+        title,
+        description,
+        publicId:result.public_id,
+        orignalSize:orignalSize,
+        compressedSize:String(result.bytes),
+        duration:result.duration || 0
+      }
+    })
+    return NextResponse.json(video)
   } catch (error) {
-    console.log("Upload Image Failed",error)
-    return NextResponse.json({error:"Upload Image Failed"},{status:500})
+    console.log("Upload Video Failed",error)
+    return NextResponse.json({error:"Upload Video Failed"},{status:500})
+  } finally {
+    await prisma.$disconnect()
   }
 }

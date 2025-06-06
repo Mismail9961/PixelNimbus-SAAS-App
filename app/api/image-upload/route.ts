@@ -1,8 +1,6 @@
 import { NextResponse,NextRequest } from "next/server";
 import { v2 as cloudinary } from "cloudinary";
 import { auth } from "@clerk/nextjs/server";
-import { error } from "console";
-import { buffer } from "stream/consumers";
 
 // Configuration
 cloudinary.config({
