@@ -19,7 +19,7 @@ function Home() {
       } else {
         setError("Unexpected response format.");
       }
-    } catch (error) {
+    } catch (_error) {
       setError("Failed to fetch videos. Please try again later.");
     } finally {
       setLoading(false);

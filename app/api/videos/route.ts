@@ -10,7 +10,7 @@ export async function GET(request: NextRequest){
             orderBy: {createdAt: "desc"}
         })
         return NextResponse.json(videos)
-    } catch (error) {
+    } catch (_error) {
         return NextResponse.json({error: "Error fetching videos"}, {status: 500})
     } finally {
         await prisma.$disconnect()

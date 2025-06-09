@@ -16,11 +16,10 @@ interface CloudinaryUploadResult {
   secure_url: string;
   bytes: number;
   duration?: number;
-  [key: string]: any;
+  [key: string]: unknown;   // ✅ no-explicit-any fixed
 }
 
 export async function POST(request: NextRequest) {
-  // Clerk returns an object synchronously; no need to await
   const { userId } = await auth();
 
   if (!userId) {
@@ -61,7 +60,7 @@ export async function POST(request: NextRequest) {
         title,
         description,
         publicId: uploadResult.public_id,
-        orignalSize: String(originalSize), // make sure the field names
+        orignalSize: String(originalSize),
         compressedSize: String(uploadResult.bytes),
         duration: uploadResult.duration ?? 0,
       },
@@ -71,5 +70,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Upload Video Failed:", error);
     return NextResponse.json({ error: "Upload Video Failed" }, { status: 500 });
+  } finally {
+    await prisma.$disconnect();
   }
 }
