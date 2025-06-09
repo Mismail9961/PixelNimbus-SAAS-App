@@ -8,12 +8,6 @@ export const metadata = {
   description: "Cloudinary SAAS App",
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
-  return (
-    <ClerkProvider>
-      <html lang="en">
-        <body>{children}</body>
-      </html>
-    </ClerkProvider>
-  );
+export default function Page() {
+  return <div>Welcome to the Cloudinary SAAS App</div>;
 }
