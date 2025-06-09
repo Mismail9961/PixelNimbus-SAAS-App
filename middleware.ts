@@ -1,37 +1,31 @@
-import {
-  auth,
-  clerkMiddleware,
-  createRouteMatcher,
-} from "@clerk/nextjs/server";
+import { auth, clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
 const isPublicPage = createRouteMatcher(["/", "/home", "/sign-in", "/sign-up"]);
-const isPublicApi = createRouteMatcher(["/api/videos"]);
 
 export default clerkMiddleware(async (auth, req) => {
   const { userId } = await auth();
-  const url = new URL(req.url);
-  const pathname = url.pathname;
-  const isApi = pathname.startsWith("/api");
+  const url       = new URL(req.url);
+  const pathname  = url.pathname;
+  const isApi     = pathname.startsWith("/api");
 
-  // Redirect root "/" to "/home"
+  // 1. Redirect "/" → "/home"
   if (pathname === "/") {
     return NextResponse.redirect(new URL("/home", req.url));
   }
 
-  // Remove previous logged-in redirect on public API
-
+  // 2. Un-authenticated access control
   if (!userId) {
+    // Visiting any non-public page → redirect to sign-in
     if (!isApi && !isPublicPage(req)) {
       return NextResponse.redirect(new URL("/sign-in", req.url));
     }
-    if (isApi && !isPublicApi(req)) {
-      return new NextResponse(
-        JSON.stringify({ error: "Unauthorized" }),
-        {
-          status: 401,
-          headers: { "Content-Type": "application/json" },
-        }
+
+    // Calling ANY API while logged-out → 401 JSON
+    if (isApi) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
       );
     }
   }
@@ -39,6 +33,7 @@ export default clerkMiddleware(async (auth, req) => {
   return NextResponse.next();
 });
 
+// Match every request except _next assets & static files
 export const config = {
-  matcher: ["/((?!.*\\..*|_next).*)", "/", "/(api|trpc)(.*)"],
+  matcher: ["/((?!.*\\..*|_next).*)", "/", "/api/(.*)"],
 };
