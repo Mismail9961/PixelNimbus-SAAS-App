@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useClerk, useUser } from "@clerk/nextjs";
 import {
@@ -40,9 +41,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         href={href}
         onClick={() => setMobileOpen(false)}
         className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-          active
-            ? "bg-blue-100 text-blue-600"
-            : "text-gray-700 hover:bg-gray-100"
+          active ? "bg-blue-100 text-blue-600" : "text-gray-700 hover:bg-gray-100"
         }`}
       >
         <Icon className="h-5 w-5 shrink-0" />
@@ -70,10 +69,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         {user && (
           <div className="mt-auto flex items-center gap-3 pt-6 border-t">
-            <img
+            <Image
               src={user.imageUrl}
               alt="user"
-              className="h-10 w-10 rounded-full border"
+              width={40}
+              height={40}
+              className="h-10 w-10 rounded-full border object-cover"
             />
             <div className="flex-1 truncate">
               <p className="text-sm font-medium text-gray-900">
@@ -121,10 +122,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         {user && (
           <div className="mt-auto flex items-center gap-3 pt-6 border-t">
-            <img
+            <Image
               src={user.imageUrl}
               alt="user"
-              className="h-10 w-10 rounded-full border"
+              width={40}
+              height={40}
+              className="h-10 w-10 rounded-full border object-cover"
             />
             <div className="flex-1 truncate">
               <p className="text-sm font-medium text-gray-900">
@@ -157,10 +160,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
           {user && (
             <div className="flex items-center gap-3">
-              <img
+              <Image
                 src={user.imageUrl}
                 alt="user"
-                className="h-8 w-8 rounded-full border"
+                width={32}
+                height={32}
+                className="h-8 w-8 rounded-full border object-cover"
               />
               <span className="hidden text-sm text-gray-700 truncate sm:inline-block max-w-xs">
                 {user.username || user.emailAddresses[0].emailAddress}
