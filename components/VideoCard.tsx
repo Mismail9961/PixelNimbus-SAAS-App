@@ -5,6 +5,7 @@ import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { filesize } from "filesize";
 import { Video } from "@/types";
+import Image from "next/image";
 
 dayjs.extend(relativeTime);
 
@@ -13,20 +14,10 @@ interface VideoCardProps {
   onDownload: (url: string, title: string) => void;
 }
 
-/**
- * Responsive and accessible Video Card component
- * – Hover preview on desktop
- * – Optimised thumbnail sizes
- * – Responsive typography & layout
- * – Smooth hover elevation and scale
- */
 const VideoCard: React.FC<VideoCardProps> = ({ video, onDownload }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [previewError, setPreviewError] = useState(false);
 
-  /* ———————————————————————————————————— */
-  /* Cloudinary helpers                                                      */
-  /* ———————————————————————————————————— */
   const getThumbnailUrl = useCallback(
     (publicId: string) =>
       getCldImageUrl({
@@ -63,9 +54,6 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, onDownload }) => {
     []
   );
 
-  /* ———————————————————————————————————— */
-  /* Format helpers                                                          */
-  /* ———————————————————————————————————— */
   const formatSize = useCallback((size: number) => filesize(size), []);
 
   const formatDuration = useCallback((seconds: number) => {
@@ -74,22 +62,13 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, onDownload }) => {
     return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
   }, []);
 
-  /* ———————————————————————————————————— */
-  /* Derived values                                                          */
-  /* ———————————————————————————————————— */
   const originalSize = Number(video.orignalSize ?? 0);
   const compressedSize = Number(video.compressedSize ?? 0);
   const compressionPercentage =
     originalSize > 0 ? Math.round((1 - compressedSize / originalSize) * 100) : 0;
 
-  /* ———————————————————————————————————— */
-  /* UI handlers                                                             */
-  /* ———————————————————————————————————— */
   const handlePreviewError = () => setPreviewError(true);
 
-  /* ———————————————————————————————————— */
-  /* JSX                                                                     */
-  /* ———————————————————————————————————— */
   return (
     <div
       className="card bg-base-300 shadow-lg transition-all duration-300 sm:hover:-translate-y-1 sm:hover:scale-[1.02] sm:hover:shadow-xl"
@@ -108,11 +87,13 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, onDownload }) => {
             onError={handlePreviewError}
           />
         ) : (
-          <img
+          <Image
             src={getThumbnailUrl(video.publicId)}
             alt={video.title}
-            className="h-full w-full object-cover"
-            loading="lazy"
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, 50vw"
+            onError={() => setPreviewError(true)}
           />
         )}
 
@@ -125,24 +106,20 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, onDownload }) => {
 
       {/* Card body */}
       <div className="card-body space-y-3 p-4 sm:p-6">
-        {/* Title */}
         <h2 className="card-title line-clamp-2 text-base sm:text-lg">
           {video.title}
         </h2>
 
-        {/* Description */}
         {video.description && (
           <p className="line-clamp-3 text-xs opacity-80 sm:text-sm">
             {video.description}
           </p>
         )}
 
-        {/* Uploaded date */}
         <p className="text-xs opacity-70">
           Uploaded {dayjs(video.createdAt).fromNow()}
         </p>
 
-        {/* Size grid */}
         <div className="grid grid-cols-2 gap-3 text-xs sm:text-sm">
           <div className="flex items-center gap-2">
             <FileUp size={18} className="text-primary" />
@@ -160,15 +137,17 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, onDownload }) => {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
           <span className="text-xs font-medium sm:text-sm">
-            Compression: <span className="text-accent">{compressionPercentage}%</span>
+            Compression:{" "}
+            <span className="text-accent">{compressionPercentage}%</span>
           </span>
 
           <button
             className="btn btn-primary btn-sm"
-            onClick={() => onDownload(getFullVideoUrl(video.publicId), video.title)}
+            onClick={() =>
+              onDownload(getFullVideoUrl(video.publicId), video.title)
+            }
           >
             <Download size={16} />
             <span className="hidden sm:inline">Download</span>
