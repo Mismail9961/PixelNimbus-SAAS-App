@@ -19,7 +19,7 @@ function Home() {
       } else {
         setError("Unexpected response format.");
       }
-    } catch (_error) {
+    } catch {
       setError("Failed to fetch videos. Please try again later.");
     } finally {
       setLoading(false);
@@ -41,7 +41,7 @@ function Home() {
   }, []);
 
   return (
-    <main className="min-h-screen  p-6">
+    <main className="min-h-screen p-6">
       <div className="max-w-7xl mx-auto">
         <header className="mb-8">
           <h1 className="text-3xl font-semibold text-gray-800 tracking-tight">
