@@ -40,6 +40,12 @@ function Home() {
     document.body.removeChild(link);
   }, []);
 
+
+  const handleRemoved = (id: string) => {
+  setVideos(prev => prev.filter(v => v.id !== id));
+};
+
+
   return (
     <main className="min-h-screen p-6">
       <div className="max-w-7xl mx-auto">
@@ -74,6 +80,7 @@ function Home() {
                 key={video.id}
                 video={video}
                 onDownload={handleDownload}
+                onRemoved={handleRemoved} // ✅ now it satisfies the required props
               />
             ))}
           </section>
