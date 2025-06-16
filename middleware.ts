@@ -9,10 +9,6 @@ export default clerkMiddleware(async (auth, req) => {
   const pathname  = url.pathname;
   const isApi     = pathname.startsWith("/api");
 
-  // 1. Redirect "/" → "/home"
-  if (pathname === "/") {
-    return NextResponse.redirect(new URL("/home", req.url));
-  }
 
   // 2. Un-authenticated access control
   if (!userId) {

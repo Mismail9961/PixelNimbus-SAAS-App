@@ -1,29 +1,40 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { getCldImageUrl, getCldVideoUrl } from "next-cloudinary";
-import { Download, Clock, FileDown, FileUp, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Download, Clock, FileDown, FileUp, Trash2, Info, Image } from "lucide-react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { filesize } from "filesize";
 import { Video } from "@/types";
-import { useRouter } from "next/navigation";
 
 dayjs.extend(relativeTime);
 
 interface VideoCardProps {
   video: Video;
   onDownload: (url: string, title: string) => void;
+  onRemoved: (id: string) => void;
 }
 
-const VideoCard: React.FC<VideoCardProps> = ({
-  video,
-  onDownload,
-}) => {
+// Helper for tooltips
+const Tooltip = ({ text, children }: { text: string, children: React.ReactNode }) => (
+  <span className="relative group cursor-pointer">
+    {children}
+    <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-max max-w-xs bg-white text-black text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition pointer-events-none z-50">
+      {text}
+    </span>
+  </span>
+);
+
+const VideoCard: React.FC<VideoCardProps> = ({ video, onDownload }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [previewError, setPreviewError] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isDownloadingThumbnail, setIsDownloadingThumbnail] = useState(false);
+
   const router = useRouter();
 
+  // === Utility Functions ===
   const getThumbnailUrl = useCallback(
     (publicId: string) =>
       getCldImageUrl({
@@ -50,6 +61,16 @@ const VideoCard: React.FC<VideoCardProps> = ({
     []
   );
 
+  const getMainVideoUrl = useCallback(
+    (publicId: string) =>
+      getCldVideoUrl({
+        src: publicId,
+        width: 400,
+        height: 225,
+      }),
+    []
+  );
+
   const getFullVideoUrl = (publicId: string) =>
     getCldVideoUrl({ src: publicId, width: 1920, height: 1080 });
 
@@ -60,132 +81,286 @@ const VideoCard: React.FC<VideoCardProps> = ({
     return `${min}:${sec.toString().padStart(2, "0")}`;
   };
 
-  const compressionPercentage = Math.round(
-    (1 - Number(video.compressedSize) / Number(video.originalSize)) * 100
-  );
+  // Fixed compression calculation
+  const getCompressionInfo = () => {
+    const originalSize = Number(video.originalSize);
+    const compressedSize = Number(video.compressedSize);
+    
+    if (compressedSize < originalSize) {
+      // File was compressed (smaller)
+      const percentage = Math.round((1 - compressedSize / originalSize) * 100);
+      return {
+        percentage,
+        text: `${percentage}% smaller`,
+        color: "text-white"
+      };
+    } else if (compressedSize > originalSize) {
+      // File was enlarged (processing increased size)
+      const percentage = Math.round((compressedSize / originalSize - 1) * 100);
+      return {
+        percentage,
+        text: `${percentage}% larger`,
+        color: "text-gray-300"
+      };
+    } else {
+      // Same size
+      return {
+        percentage: 0,
+        text: "No change",
+        color: "text-gray-400"
+      };
+    }
+  };
+
+  const compressionInfo = getCompressionInfo();
 
   useEffect(() => {
-    setPreviewError(false);
+    if (!isHovered) setPreviewError(false);
   }, [isHovered]);
 
   const handleDelete = async () => {
     try {
       setIsDeleting(true);
-      await fetch(`/api/deletevideos/${video.id}`, {
+      const res = await fetch(`/api/deletevideos/${video.id}`, {
         method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
       });
+
+      if (!res.ok) throw new Error("Failed to delete video");
+
       router.refresh();
-    } catch (err) {
-      console.error("Delete failed:", err);
-      alert(
-        `Failed to delete video: ${
-          err instanceof Error ? err.message : "Unknown error"
-        }`
-      );
+    } catch (error) {
+      console.error("Delete error:", error);
+      alert(`Delete failed: ${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
       setIsDeleting(false);
     }
   };
 
+  const handleDownloadThumbnail = async () => {
+    try {
+      setIsDownloadingThumbnail(true);
+      const thumbnailUrl = getThumbnailUrl(video.publicId);
+      onDownload(thumbnailUrl, `${video.title}-thumbnail`);
+    } catch (error) {
+      console.error("Thumbnail download error:", error);
+      alert(`Thumbnail download failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+    } finally {
+      setIsDownloadingThumbnail(false);
+    }
+  };
+
+  // === Render ===
   return (
     <div
-      className="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 relative"
+      className="card bg-black text-white shadow-2xl hover:shadow-white/10 transition-all duration-300 relative border border-white/20 rounded-xl overflow-hidden hover:border-white/40"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       data-video-id={video.id}
     >
       {isDeleting && (
-        <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-20 rounded-lg">
-          <div className="bg-white rounded-lg p-4 flex items-center gap-3">
-            <div className="loading loading-spinner loading-md"></div>
-            <span className="text-black font-semibold">Deleting video...</span>
+        <div className="absolute inset-0 bg-black/90 z-30 flex items-center justify-center rounded-xl backdrop-blur-sm">
+          <div className="bg-white text-black px-6 py-3 rounded-lg shadow-lg flex items-center gap-3">
+            <span className="loading loading-spinner loading-md" />
+            <span className="font-semibold">Deleting video...</span>
           </div>
         </div>
       )}
 
-      <figure className="aspect-video relative">
+      <figure className="aspect-video relative group">
         {isHovered ? (
-          previewError ? (
-            <div className="w-full h-full flex items-center justify-center bg-gray-200">
-              <p className="text-red-500">Preview not available</p>
-            </div>
-          ) : (
-            <video
-              src={getPreviewVideoUrl(video.publicId)}
-              autoPlay
-              muted
-              loop
-              className="w-full h-full object-cover"
-              onError={() => setPreviewError(true)}
-            />
-          )
+          <video
+            src={previewError ? getMainVideoUrl(video.publicId) : getPreviewVideoUrl(video.publicId)}
+            autoPlay
+            muted
+            loop
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            onError={() => setPreviewError(true)}
+          />
         ) : (
           <img
             src={getThumbnailUrl(video.publicId)}
             alt={video.title}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         )}
-        <div className="absolute bottom-2 right-2 bg-base-100/70 px-2 py-1 rounded-lg text-sm flex items-center">
-          <Clock size={16} className="mr-1" />
+        <div className="absolute bottom-3 right-3 bg-white/90 text-black text-xs px-3 py-1.5 rounded-full flex items-center backdrop-blur-sm">
+          <Clock size={14} className="mr-1.5" />
           {formatDuration(video.duration)}
         </div>
       </figure>
 
-      <div className="card-body p-4">
-        <h2 className="card-title text-lg font-bold">{video.title}</h2>
-        <p className="text-sm opacity-70 mb-2">{video.description}</p>
-        <p className="text-sm opacity-70 mb-4">
-          Uploaded {dayjs(video.createdAt).fromNow()}
-        </p>
+      <div className="card-body p-6 space-y-4">
+        <h2 className="card-title text-xl font-bold tracking-tight text-white">{video.title}</h2>
+        <p className="text-sm text-gray-300 leading-relaxed">{video.description}</p>
+        
+        {/* Upload Info */}
+        <div className="text-sm text-gray-400 space-y-1">
+          <p className="flex items-center">
+            <FileUp size={14} className="mr-2" />
+            Uploaded {dayjs(video.createdAt).fromNow()}
+          </p>
+        </div>
 
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div className="flex items-center">
-            <FileUp size={18} className="mr-2 text-primary" />
-            <div>
-              <div className="font-semibold">Original</div>
-              <div>{formatSize(Number(video.originalSize))}</div>
+        {/* AI Processing Details */}
+        {video.metadata && (
+          <div className="mt-4 bg-white/5 border border-white/10 rounded-lg p-4 backdrop-blur-sm">
+            <h3 className="font-semibold mb-2 flex items-center text-white">
+              <Info size={16} className="mr-2" />
+              AI Processing
+            </h3>
+            <ul className="text-sm space-y-2">
+              <li className="flex items-center justify-between">
+                <span>Enhancement:</span>
+                <span className={video.metadata.processingOptions.enableEnhancement ? "text-white" : "text-gray-400"}>
+                  {video.metadata.processingOptions.enableEnhancement ? "Enabled" : "Disabled"}
+                </span>
+              </li>
+              <li className="flex items-center justify-between">
+                <span>Quality:</span>
+                <span className="text-gray-300">{video.metadata.processingOptions.quality}</span>
+              </li>
+              <li className="flex items-center justify-between">
+                <span>Thumbnail:</span>
+                <span className={video.metadata.processingOptions.generateThumbnail ? "text-white" : "text-gray-400"}>
+                  {video.metadata.processingOptions.generateThumbnail ? "Generated" : "Not generated"}
+                </span>
+              </li>
+              <li className="flex items-center justify-between">
+                <span>Content Analysis:</span>
+                <span className={video.metadata.processingOptions.analyzeContent ? "text-white" : "text-gray-400"}>
+                  {video.metadata.processingOptions.analyzeContent ? "Completed" : "Not analyzed"}
+                </span>
+              </li>
+            </ul>
+          </div>
+        )}
+
+        {/* Show the generated thumbnail if available */}
+        {video.metadata?.processingOptions?.generateThumbnail && (
+          <div className="mt-4">
+            <h4 className="font-semibold mb-2 flex items-center text-white">
+              <Image size={16} className="mr-2" />
+              Generated Thumbnail
+            </h4>
+            <img
+              src={getThumbnailUrl(video.publicId)}
+              alt="Generated Thumbnail"
+              className="w-full h-48 object-cover rounded-lg border border-white/20 shadow-lg"
+            />
+          </div>
+        )}
+
+        {/* AI Analysis Results */}
+        {video.metadata?.aiMetadata && (
+          <div className="mt-4 bg-white/5 border border-white/10 rounded-lg p-4 backdrop-blur-sm">
+            <h4 className="font-semibold mb-2 flex items-center text-white">
+              <Info size={16} className="mr-2" />
+              AI Analysis Results
+            </h4>
+            <ul className="text-sm space-y-2">
+              <li className="flex items-center justify-between">
+                <span>Quality:</span>
+                <span className="text-gray-300">{video.metadata.aiMetadata.quality}</span>
+              </li>
+              {video.metadata.aiMetadata.tags && video.metadata.aiMetadata.tags.length > 0 && (
+                <li>
+                  <span className="block mb-1">Tags:</span>
+                  <div className="flex flex-wrap gap-2">
+                    {video.metadata.aiMetadata.tags.map((tag, index) => (
+                      <span key={index} className="bg-white/10 text-white px-2 py-1 rounded-full text-xs border border-white/20">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </li>
+              )}
+            </ul>
+          </div>
+        )}
+
+        {/* File Info Section */}
+        <div className="bg-white/5 border border-white/10 rounded-lg p-4 backdrop-blur-sm">
+          <div className="flex items-center mb-3">
+            <FileUp size={18} className="text-white mr-2" />
+            <span className="font-semibold text-white">File Information</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="font-medium">Original Size:</span>
+              <span className="text-gray-300">{formatSize(Number(video.originalSize))}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="font-medium">Processed Size:</span>
+              <span className="text-gray-300">{formatSize(Number(video.compressedSize))}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="font-medium">Size Change:</span>
+              <span className={compressionInfo.color}>{compressionInfo.text}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="font-medium">Duration:</span>
+              <span className="text-gray-300">{formatDuration(video.duration)}</span>
             </div>
           </div>
-          <div className="flex items-center">
-            <FileDown size={18} className="mr-2 text-secondary" />
-            <div>
-              <div className="font-semibold">Compressed</div>
-              <div>{formatSize(Number(video.compressedSize))}</div>
-            </div>
+          
+          {/* Debug info - remove this in production */}
+          <div className="mt-2 text-xs text-gray-500 border-t border-white/10 pt-2">
+            <div>Debug: Original={video.originalSize}, Processed={video.compressedSize}</div>
+            <div>Calculation: {Number(video.compressedSize) < Number(video.originalSize) ? 'Compressed' : 'Enlarged'}</div>
           </div>
         </div>
 
-        <div className="flex justify-between items-center mt-4">
-          <div className="text-sm font-semibold">
-            Compression: <span className="text-accent">{compressionPercentage}%</span>
-          </div>
-
-          <div className="flex gap-2">
+        {/* Action Buttons */}
+        <div className="flex items-center justify-between mt-6">
+          <div className="flex gap-3">
             <button
-              className="btn btn-sm btn-primary"
-              onClick={() => onDownload(getFullVideoUrl(video.publicId), video.title)}
+              className="btn btn-sm bg-white text-black hover:bg-gray-200 border-none transition-colors duration-200"
+              onClick={() => {
+                setIsDownloading(true);
+                onDownload(getFullVideoUrl(video.publicId), video.title);
+                setTimeout(() => setIsDownloading(false), 1000);
+              }}
               disabled={isDownloading || isDeleting}
-              title="Download video"
+              title="Download Video"
             >
               {isDownloading ? (
                 <>
-                  <div className="loading loading-spinner loading-xs" />
-                  <span className="ml-1">Downloading...</span>
+                  <span className="loading loading-spinner loading-xs" />
+                  <span className="ml-2">Downloading</span>
                 </>
               ) : (
-                <Download size={16} />
+                <>
+                  <Download size={16} />
+                  <span className="ml-2">Video</span>
+                </>
               )}
             </button>
 
             <button
-              className="btn btn-sm btn-error"
+              className="btn btn-sm bg-gray-800 text-white hover:bg-gray-700 border border-white/20 transition-colors duration-200"
+              onClick={handleDownloadThumbnail}
+              disabled={isDownloadingThumbnail || isDeleting}
+              title="Download Thumbnail"
+            >
+              {isDownloadingThumbnail ? (
+                <>
+                  <span className="loading loading-spinner loading-xs" />
+                  <span className="ml-2">Downloading</span>
+                </>
+              ) : (
+                <>
+                  <Image size={16} />
+                  <span className="ml-2">Thumbnail</span>
+                </>
+              )}
+            </button>
+
+            <button
+              className="btn btn-sm bg-white text-black hover:bg-gray-200 border-none transition-colors duration-200"
               onClick={handleDelete}
               disabled={isDeleting}
-              title="Delete video"
+              title="Delete"
             >
               <Trash2 size={16} />
             </button>

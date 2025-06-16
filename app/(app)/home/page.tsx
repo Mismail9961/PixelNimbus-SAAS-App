@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import VideoCard from "@/components/VideoCard";
@@ -40,20 +41,18 @@ function Home() {
     document.body.removeChild(link);
   }, []);
 
-
   const handleRemoved = (id: string) => {
-  setVideos(prev => prev.filter(v => v.id !== id));
-};
-
+    setVideos((prev) => prev.filter((v) => v.id !== id));
+  };
 
   return (
     <main className="min-h-screen p-6">
       <div className="max-w-7xl mx-auto">
         <header className="mb-8">
-          <h1 className="text-3xl font-semibold text-gray-800 tracking-tight">
+          <h1 className="text-3xl font-semibold text-white tracking-tight">
             📺 Your Video Library
           </h1>
-          <p className="text-gray-500 mt-1">
+          <p className="text-white mt-1">
             Browse, preview, and download your uploaded videos.
           </p>
         </header>
@@ -80,7 +79,7 @@ function Home() {
                 key={video.id}
                 video={video}
                 onDownload={handleDownload}
-                onRemoved={handleRemoved} // ✅ now it satisfies the required props
+                onRemoved={handleRemoved}
               />
             ))}
           </section>

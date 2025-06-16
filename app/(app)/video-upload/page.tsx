@@ -1,102 +1,159 @@
-'use client';
+"use client";
 
-import axios from 'axios';
-import { useRouter } from 'next/navigation';
-import React, { useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import axios from "axios";
+import { useRouter } from "next/navigation";
+import React, { useState } from "react";
+import { Loader2 } from "lucide-react";
 
-const MAX_FILE_SIZE = 60 * 1024 * 1024; // 60 MB
+const MAX_FILE_SIZE = 60 * 1024 * 1024; // 60MB
 
 export default function VideoUpload() {
   const [file, setFile] = useState<File | null>(null);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [enableEnhancement, setEnableEnhancement] = useState(true);
+  const [quality, setQuality] = useState<"auto" | "high" | "medium" | "low">("auto");
+  const [generateThumbnail, setGenerateThumbnail] = useState(true);
+  const [analyzeContent, setAnalyzeContent] = useState(true);
+  const [uploadProgress, setUploadProgress] = useState(0);
+
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!file) return;
 
-    if (file.size > MAX_FILE_SIZE) {
-      setError('File size exceeds 60 MB.');
-      return;
-    }
+    if (!file) return setError("Please select a video file.");
+    if (file.size > MAX_FILE_SIZE) return setError("File size exceeds the 60MB limit.");
 
     setIsUploading(true);
     setError(null);
 
     const formData = new FormData();
-    formData.append('file', file);
-    formData.append('title', title);
-    formData.append('description', description);
-    formData.append('size', file.size.toString());
+    formData.append("file", file);
+    formData.append("title", title);
+    formData.append("description", description);
+    formData.append("size", file.size.toString());
+    formData.append("enableEnhancement", enableEnhancement.toString());
+    formData.append("quality", quality);
+    formData.append("generateThumbnail", generateThumbnail.toString());
+    formData.append("analyzeContent", analyzeContent.toString());
 
     try {
-      const response = await axios.post('/api/video-upload', formData);
-      console.log(response.data);
-      router.push('/home'); // Redirect after success
-    } catch (err) {
-      console.error(err);
-      setError('Upload failed. Please try again.');
+      const response = await axios.post("/api/video-upload", formData, {
+        onUploadProgress: (e) => {
+          const progress = e.total ? (e.loaded / e.total) * 100 : 0;
+          setUploadProgress(Math.round(progress));
+        },
+      });
+
+      if (response.status === 200) router.push("/home");
+      else throw new Error("Upload failed");
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Upload failed. Please try again.");
     } finally {
       setIsUploading(false);
     }
   };
 
   return (
-    <div className="max-w-3xl mx-auto mt-10 bg-white shadow-sm rounded-lg p-8 border">
-      <h1 className="text-2xl font-semibold text-gray-800 mb-6">Upload a New Video</h1>
+    <div className="min-h-screen bg-black text-white py-10 px-6">
+      <div className="max-w-3xl mx-auto bg-black rounded-2xl p-8 shadow-xl ">
+        <h1 className="text-3xl font-bold mb-6 text-center text-white">Upload Your Video</h1>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            required
-            className="w-full px-4 py-2 border rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label htmlFor="title" className="text-sm mb-2 block text-white ">Title</label>
+            <input
+              type="text"
+              id="title"
+              className="w-full px-4 py-2 rounded-lg bg-white border border-gray-600 text-black "
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+            />
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            required
-            rows={4}
-            className="w-full px-4 py-2 border rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
+          <div>
+            <label htmlFor="description" className="text-sm mb-2 block text-white">Description</label>
+            <textarea
+              id="description"
+              className="w-full px-4 py-2 rounded-lg bg-white border border-gray-600 text-black"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={4}
+              required
+            ></textarea>
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Video File</label>
-          <input
-            type="file"
-            accept="video/*"
-            onChange={(e) => setFile(e.target.files?.[0] || null)}
-            required
-            className="w-full text-sm border rounded-md p-2 text-black font-bold cursor-pointer bg-white 
-              file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-          />
-        </div>
+          <div>
+            <label htmlFor="file" className="text-sm mb-2 block text-white">Video File</label>
+            <input
+              type="file"
+              id="file"
+              accept="video/*"
+              onChange={(e) => setFile(e.target.files?.[0] || null)}
+              required
+              className="block w-full text-sm text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-white file:text-black hover:file:bg-black hover:file:text-white"
+            />
+            {file && (
+              <p className="text-xs text-white mt-1">
+                Selected: <strong>{file.name}</strong> ({(file.size / (1024 * 1024)).toFixed(2)} MB)
+              </p>
+            )}
+          </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+          <div className="grid sm:grid-cols-2 gap-4">
+            <label className="flex items-center space-x-2">
+              <input type="checkbox" checked={enableEnhancement} onChange={(e) => setEnableEnhancement(e.target.checked)} />
+              <span className="text-sm text-white">Enable AI Enhancement</span>
+            </label>
 
-        <div>
-          <button
-            type="submit"
-            disabled={isUploading}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-md text-sm font-medium disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {isUploading && <Loader2 className="h-4 w-5 animate-spin" />}
-            {isUploading ? 'Uploading...' : 'Upload Video'}
-          </button>
-        </div>
-      </form>
+            <label className="flex items-center space-x-2">
+              <input type="checkbox" checked={generateThumbnail} onChange={(e) => setGenerateThumbnail(e.target.checked)} />
+              <span className="text-sm text-white">Generate AI Thumbnail</span>
+            </label>
+
+            <label className="flex items-center space-x-2">
+              <input type="checkbox" checked={analyzeContent} onChange={(e) => setAnalyzeContent(e.target.checked)} />
+              <span className="text-sm text-white">Analyze Content</span>
+            </label>
+
+            <div>
+              <label htmlFor="quality" className="text-sm mb-1 block text-white">Video Quality</label>
+              <select
+                id="quality"
+                value={quality}
+                onChange={(e) => setQuality(e.target.value as any)}
+                className="w-full px-3 py-2 bg-black text-white border border-gray-600 rounded-lg"
+              >
+                <option value="auto">Auto (Recommended)</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
+            </div>
+          </div>
+
+          {error && <p className="text-sm text-red-500 font-medium">{error}</p>}
+
+          <div className="pt-4">
+            <button
+              type="submit"
+              disabled={isUploading}
+              className="w-full py-3 flex justify-center items-center gap-2 rounded-xl bg-white hover:bg-black font-semibold text-black hover:text-white text-sm sm:text-base disabled:opacity-50"
+            >
+              {isUploading && <Loader2 className="h-5 w-5 animate-spin" />} Upload Video
+            </button>
+            {uploadProgress > 0 && (
+              <div className="mt-2 text-xs text-gray-400 text-center">
+                Upload Progress: {uploadProgress}%
+              </div>
+            )}
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

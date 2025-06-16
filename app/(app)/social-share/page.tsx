@@ -1,54 +1,64 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from "react";
-import { CldImage } from "next-cloudinary";
+import React, { useEffect, useRef, useState } from 'react';
+import { CldImage } from 'next-cloudinary';
+import { ArrowDownCircle, UploadCloud, Loader2 } from 'lucide-react';
 
 const socialFormats = {
-  "Instagram Square (1:1)": { width: 1080, height: 1080, aspectRatio: "1:1" },
-  "Instagram Portrait (4:5)": { width: 1080, height: 1350, aspectRatio: "4:5" },
-  "Twitter Post (16:9)": { width: 1200, height: 675, aspectRatio: "16:9" },
-  "Twitter Header (3:1)": { width: 1500, height: 500, aspectRatio: "3:1" },
-  "Facebook Cover (205:78)": { width: 820, height: 312, aspectRatio: "205:78" },
+  'Instagram Square (1:1)': { width: 1080, height: 1080, aspectRatio: '1:1' },
+  'Instagram Portrait (4:5)': { width: 1080, height: 1350, aspectRatio: '4:5' },
+  'Twitter Post (16:9)': { width: 1200, height: 675, aspectRatio: '16:9' },
+  'Twitter Header (3:1)': { width: 1500, height: 500, aspectRatio: '3:1' },
+  'Facebook Cover (205:78)': { width: 820, height: 312, aspectRatio: '205:78' },
 };
 
 type SocialFormat = keyof typeof socialFormats;
 
 export default function SocialShare() {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
-  const [selectedFormat, setSelectedFormat] = useState<SocialFormat>("Instagram Square (1:1)");
+  const [previewURL, setPreviewURL] = useState<string | null>(null);
+  const [selectedFormat, setSelectedFormat] = useState<SocialFormat>('Instagram Square (1:1)');
   const [isUploading, setIsUploading] = useState(false);
   const [isTransforming, setIsTransforming] = useState(false);
   const imageRef = useRef<HTMLImageElement>(null);
 
-  useEffect(() => {
-    if (uploadedImage) {
-      setIsTransforming(true);
-    }
-  }, [selectedFormat, uploadedImage]);
-
-  const handleUploadFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
+  const handleUploadFile = async (file: File) => {
     setIsUploading(true);
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append('file', file);
 
     try {
-      const response = await fetch("/api/image-upload", {
-        method: "POST",
+      const response = await fetch('/api/image-upload', {
+        method: 'POST',
         body: formData,
       });
 
-      if (!response.ok) throw new Error("Failed to upload image");
+      if (!response.ok) throw new Error('Failed to upload image');
 
       const data = await response.json();
       setUploadedImage(data.publicId);
     } catch (error) {
       console.error(error);
-      alert("Failed to upload image");
+      alert('Image upload failed.');
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleFileInput = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setPreviewURL(URL.createObjectURL(file));
+      handleUploadFile(file);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      setPreviewURL(URL.createObjectURL(file));
+      handleUploadFile(file);
     }
   };
 
@@ -58,102 +68,117 @@ export default function SocialShare() {
     fetch(imageRef.current.src)
       .then((response) => response.blob())
       .then((blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `${selectedFormat.replace(/\s+/g, "_").toLowerCase()}.png`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${selectedFormat.replace(/\s+/g, '_').toLowerCase()}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
       });
   };
 
+  useEffect(() => {
+    if (uploadedImage) setIsTransforming(true);
+  }, [selectedFormat, uploadedImage]);
+
   return (
-    <div className="container mx-auto p-4 max-w-4xl bg-white rounded-lg shadow-lg">
-      <h1 className="text-3xl font-bold mb-6 text-center text-gray-900">
+    <div className="mx-auto max-w-4xl p-6 bg-black rounded-xl shadow-md mt-10">
+      <h1 className="text-3xl font-bold text-center mb-6 text-white">
         Social Media Image Creator
       </h1>
-      <div className="card bg-white shadow-none rounded-none">
-        <div className="card-body p-0">
-          <h2 className="card-title mb-4 text-gray-900">Upload an Image</h2>
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text text-gray-900">Choose an image file</span>
+
+      <div
+        onDrop={handleDrop}
+        onDragOver={(e) => e.preventDefault()}
+        className="w-full border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer transition hover:border-white bg-black"
+      >
+        <input
+          type="file"
+          accept="image/*"
+          onChange={handleFileInput}
+          disabled={isUploading}
+          className="hidden"
+          id="upload-input"
+        />
+        <label htmlFor="upload-input" className="cursor-pointer">
+          {isUploading ? (
+            <Loader2 className="mx-auto h-6 w-6 animate-spin text-white" />
+          ) : (
+            <UploadCloud className="mx-auto h-8 w-8 text-white" />
+          )}
+          <p className="mt-2 text-white">Click or drag an image file here to upload</p>
+        </label>
+      </div>
+
+      {previewURL && !uploadedImage && (
+        <div className="mt-4">
+          <p className="text-sm text-white">Preview:</p>
+          <img
+            src={previewURL}
+            alt="preview"
+            className="w-60 h-auto mt-2 rounded-md border border-white mx-auto"
+          />
+        </div>
+      )}
+
+      {uploadedImage && (
+        <>
+          <div className="mt-6">
+            <label className="block text-sm font-medium text-white mb-2">
+              Select Format:
             </label>
-            <input
-              type="file"
-              onChange={handleUploadFile}
-              accept="image/*"
-              className="file-input file-input-bordered file-input-primary w-full"
-              disabled={isUploading}
-            />
+            <select
+              value={selectedFormat}
+              onChange={(e) => setSelectedFormat(e.target.value as SocialFormat)}
+              className="w-full max-w-md bg-black text-white border border-white rounded-md p-2"
+            >
+              {Object.keys(socialFormats).map((format) => (
+                <option key={format} value={format} className="text-white">
+                  {format}
+                </option>
+              ))}
+            </select>
           </div>
 
-          {isUploading && (
-            <div className="mt-4">
-              <progress className="progress progress-primary w-full"></progress>
+          <div className="mt-6">
+            <p className="mb-2 text-sm text-white">Formatted Preview:</p>
+            <div className="relative mx-auto w-fit border border-white shadow rounded-lg overflow-hidden bg-black">
+              {isTransforming && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70">
+                  <Loader2 className="h-6 w-6 animate-spin text-black" />
+                </div>
+              )}
+              <CldImage
+                key={`${uploadedImage}-${selectedFormat}`}
+                width={socialFormats[selectedFormat].width}
+                height={socialFormats[selectedFormat].height}
+                src={uploadedImage}
+                alt="transformed"
+                crop="fill"
+                aspectRatio={socialFormats[selectedFormat].aspectRatio}
+                gravity="auto"
+                ref={imageRef}
+                onLoad={() => setIsTransforming(false)}
+                className="rounded-md max-w-full h-auto"
+                sizes="100vw"
+              />
             </div>
-          )}
+          </div>
 
-          {uploadedImage && (
-            <>
-              <div className="mt-6">
-                <h2 className="card-title mb-4 text-gray-900">Select Social Media Format</h2>
-                <div className="form-control">
-                  <select
-                    className="select select-bordered w-full text-gray-900"
-                    value={selectedFormat}
-                    onChange={(e) => setSelectedFormat(e.target.value as SocialFormat)}
-                    disabled={isUploading}
-                  >
-                    {Object.keys(socialFormats).map((format) => (
-                      <option key={format} value={format}>
-                        {format}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="mt-6 relative">
-                <h3 className="text-lg font-semibold mb-2 text-gray-900">Preview:</h3>
-                <div className="flex justify-center relative">
-                  {isTransforming && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-90 z-10 rounded-lg">
-                      <span className="loading loading-spinner loading-lg"></span>
-                    </div>
-                  )}
-                  <CldImage
-                    key={`${uploadedImage}-${selectedFormat}`} // force reload on change
-                    width={socialFormats[selectedFormat].width}
-                    height={socialFormats[selectedFormat].height}
-                    src={uploadedImage}
-                    alt="transformed image"
-                    crop="fill"
-                    aspectRatio={socialFormats[selectedFormat].aspectRatio}
-                    gravity="auto"
-                    ref={imageRef}
-                    onLoad={() => setIsTransforming(false)}
-                    className="rounded-md max-w-full h-auto"
-                    sizes="100vw"
-                  />
-                </div>
-              </div>
-
-              <div className="card-actions justify-end mt-6">
-                <button
-                  className="btn btn-primary"
-                  onClick={handleDownload}
-                  disabled={isUploading || isTransforming}
-                >
-                  Download for {selectedFormat}
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
+          <div className="mt-6 flex justify-end">
+            <button
+              onClick={handleDownload}
+              className="inline-flex items-center gap-2 bg-white text-black hover:bg-gray-200 px-4 py-2 rounded-md text-sm font-medium"
+              disabled={isUploading || isTransforming}
+            >
+              <ArrowDownCircle className="h-5 w-5" />
+              Download for {selectedFormat}
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

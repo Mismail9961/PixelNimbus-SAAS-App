@@ -19,70 +19,89 @@ const sidebarItems = [
   { href: "/video-upload", icon: UploadIcon, label: "Video Upload" },
 ];
 
+const NavLink = React.memo(function NavLink({
+  href,
+  icon: Icon,
+  label,
+  active,
+  onClick,
+}: {
+  href: string;
+  icon: React.ElementType;
+  label: string;
+  active: boolean;
+  onClick?: () => void;
+}) {
+  return (
+    <Link
+      href={href}
+      onClick={onClick}
+      className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ${
+        active
+          ? "bg-white text-black shadow-md"
+          : "text-gray-400 hover:bg-gray-900 hover:text-white"
+      }`}
+    >
+      <Icon className="h-5 w-5 shrink-0" />
+      <span className="truncate">{label}</span>
+    </Link>
+  );
+});
+
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
   const pathname = usePathname();
   const router = useRouter();
   const { signOut } = useClerk();
   const { user } = useUser();
 
   const handleSignOut = async () => {
+    setIsLoggingOut(true);
     await signOut();
   };
 
-  const NavLink = ({
-    href,
-    icon: Icon,
-    label,
-  }: (typeof sidebarItems)[number]) => {
-    const active = pathname === href;
-    return (
-      <Link
-        href={href}
-        onClick={() => setMobileOpen(false)}
-        className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-          active ? "bg-blue-100 text-blue-600" : "text-gray-700 hover:bg-gray-100"
-        }`}
-      >
-        <Icon className="h-5 w-5 shrink-0" />
-        <span className="truncate">{label}</span>
-      </Link>
-    );
-  };
+  const displayName =
+    user?.username || user?.emailAddresses?.[0]?.emailAddress || "User";
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* ───── Sidebar (desktop) ───── */}
-      <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:border-r lg:bg-white lg:px-4 lg:py-6">
+    <div className="flex h-screen bg-black text-white">
+      {/* Sidebar - Desktop */}
+      <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:border-r border-white/10 lg:bg-black lg:px-4 lg:py-6">
         <h1
           onClick={() => router.push("/")}
-          className="mb-8 cursor-pointer text-2xl font-bold text-blue-600"
+          className="mb-8 cursor-pointer text-2xl font-bold text-white hover:text-gray-300 transition-colors duration-200"
         >
           PixelNimbus
         </h1>
 
         <nav className="flex flex-col gap-1">
           {sidebarItems.map((item) => (
-            <NavLink key={item.href} {...item} />
+            <NavLink
+              key={item.href}
+              {...item}
+              active={pathname === item.href}
+              onClick={() => setMobileOpen(false)}
+            />
           ))}
         </nav>
 
         {user && (
-          <div className="mt-auto flex items-center gap-3 pt-6 border-t">
+          <div className="mt-auto flex items-center gap-3 pt-6 border-t border-white/10">
             <Image
               src={user.imageUrl}
-              alt="user"
+              alt="User avatar"
               width={40}
               height={40}
-              className="h-10 w-10 rounded-full border object-cover"
+              className="h-10 w-10 rounded-full border border-white/20 object-cover"
             />
             <div className="flex-1 truncate">
-              <p className="text-sm font-medium text-gray-900">
-                {user.username || user.emailAddresses[0].emailAddress}
-              </p>
+              <p className="text-sm font-medium text-white">{displayName}</p>
               <button
                 onClick={handleSignOut}
-                className="text-xs text-red-500 hover:underline"
+                disabled={isLoggingOut}
+                className="text-xs text-gray-400 hover:text-white hover:underline disabled:opacity-50 transition-colors duration-200"
               >
                 Sign out
               </button>
@@ -91,17 +110,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         )}
       </aside>
 
-      {/* ───── Mobile overlay ───── */}
+      {/* Overlay - Mobile */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/30 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/80 lg:hidden backdrop-blur-sm"
           onClick={() => setMobileOpen(false)}
         />
       )}
 
-      {/* ───── Mobile sidebar ───── */}
+      {/* Sidebar - Mobile */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white px-4 py-6 shadow-md transition-transform duration-300 lg:hidden ${
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-black px-4 py-6 border-r border-white/10 shadow-2xl transition-transform duration-300 lg:hidden ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -110,32 +129,37 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             router.push("/");
             setMobileOpen(false);
           }}
-          className="mb-8 cursor-pointer text-2xl font-bold text-blue-600"
+          className="mb-8 cursor-pointer text-2xl font-bold text-white hover:text-gray-300 transition-colors duration-200"
         >
           PixelNimbus
         </h1>
+
         <nav className="flex flex-col gap-1">
           {sidebarItems.map((item) => (
-            <NavLink key={item.href} {...item} />
+            <NavLink
+              key={item.href}
+              {...item}
+              active={pathname === item.href}
+              onClick={() => setMobileOpen(false)}
+            />
           ))}
         </nav>
 
         {user && (
-          <div className="mt-auto flex items-center gap-3 pt-6 border-t">
+          <div className="mt-auto flex items-center gap-3 pt-6 border-t border-white/10">
             <Image
               src={user.imageUrl}
-              alt="user"
+              alt="User avatar"
               width={40}
               height={40}
-              className="h-10 w-10 rounded-full border object-cover"
+              className="h-10 w-10 rounded-full border border-white/20 object-cover"
             />
             <div className="flex-1 truncate">
-              <p className="text-sm font-medium text-gray-900">
-                {user.username || user.emailAddresses[0].emailAddress}
-              </p>
+              <p className="text-sm font-medium text-white">{displayName}</p>
               <button
                 onClick={handleSignOut}
-                className="text-xs text-red-500 hover:underline"
+                disabled={isLoggingOut}
+                className="text-xs text-gray-400 hover:text-white hover:underline disabled:opacity-50 transition-colors duration-200"
               >
                 Sign out
               </button>
@@ -144,45 +168,50 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         )}
       </aside>
 
-      {/* ───── Main Content Area ───── */}
+      {/* Main Layout */}
       <div className="flex flex-1 flex-col">
-        {/* Top Navbar */}
-        <header className="flex items-center justify-between border-b bg-white px-4 py-3 lg:px-8">
+        {/* Topbar */}
+        <header className="flex items-center justify-between border-b border-white/10 bg-black px-4 py-3 lg:px-8">
           <div className="flex items-center gap-4">
             <button
+              type="button"
               onClick={() => setMobileOpen(true)}
-              className="rounded-md p-2 hover:bg-gray-100 lg:hidden"
+              className="rounded-md p-2 hover:bg-white/10 lg:hidden transition-colors duration-200"
+              aria-label="Open sidebar"
             >
-              <MenuIcon className="h-6 w-6" />
+              <MenuIcon className="h-6 w-6 text-white" />
             </button>
-            <h2 className="text-lg font-semibold text-gray-800">Dashboard</h2>
+            <h2 className="text-lg font-semibold text-white">Dashboard</h2>
           </div>
 
           {user && (
             <div className="flex items-center gap-3">
               <Image
                 src={user.imageUrl}
-                alt="user"
+                alt="User avatar"
                 width={32}
                 height={32}
-                className="h-8 w-8 rounded-full border object-cover"
+                className="h-8 w-8 rounded-full border border-white/20 object-cover"
               />
-              <span className="hidden text-sm text-gray-700 truncate sm:inline-block max-w-xs">
-                {user.username || user.emailAddresses[0].emailAddress}
+              <span className="hidden text-sm text-gray-300 truncate sm:inline-block max-w-xs">
+                {displayName}
               </span>
               <button
                 onClick={handleSignOut}
-                className="rounded-md p-2 hover:bg-gray-100"
+                disabled={isLoggingOut}
+                className="rounded-md p-2 hover:bg-white/10 transition-colors duration-200"
                 title="Sign out"
               >
-                <LogOutIcon className="h-5 w-5 text-gray-500" />
+                <LogOutIcon className="h-5 w-5 text-gray-400 hover:text-white transition-colors duration-200" />
               </button>
             </div>
           )}
         </header>
 
-        {/* Page content */}
-        <main className="flex-1 overflow-y-auto p-6 lg:p-8">{children}</main>
+        {/* Page Content */}
+        <main className="flex-1 overflow-y-auto p-6 lg:p-8 text-white bg-black">
+          {children}
+        </main>
       </div>
     </div>
   );

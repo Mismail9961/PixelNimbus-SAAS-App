@@ -5,16 +5,21 @@ const prisma = new PrismaClient();
 
 export async function DELETE(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }  // ✅ No Promise here
 ) {
   try {
-    const { id } = await params; // Add await here
+    const { id } = params;
 
-    await prisma.video.delete({ where: { id } });
+    await prisma.video.delete({
+      where: { id },
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Delete failed:", error);
-    return NextResponse.json({ error: "Failed to delete video" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to delete video" },
+      { status: 500 }
+    );
   }
 }

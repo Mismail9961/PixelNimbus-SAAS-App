@@ -13,14 +13,27 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+
 model Video {
-    id             String   @id @default(cuid())
-    title          String
-    description    String?
-    publicId       String
-    originalSize   String
-    compressedSize String
-    duration       Float
-    createdAt      DateTime @default(now())
-    updatedAt      DateTime @updatedAt
+  id             String   @id @default(cuid())
+  title          String
+  description    String?
+  publicId       String
+  originalSize   String
+  compressedSize String
+  duration       Float
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  metadata       Json?    @default("{}")
+
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+}
+
+model User {
+  id      String   @id @default(cuid())
+  clerkId String   @unique  // Clerk's user ID
+  email   String   @unique
+  name    String?
+  videos  Video[]
 }
