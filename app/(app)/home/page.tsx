@@ -6,21 +6,22 @@ import VideoCard from "@/components/VideoCard";
 import { Video } from "@/types";
 import { Loader2, AlertTriangle, Film } from "lucide-react";
 
-function Home() {
+const Home = () => {
   const [videos, setVideos] = useState<Video[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchVideos = useCallback(async () => {
     try {
-      const response = await axios.get("/api/videos");
+      const response = await axios.get<Video[]>("/api/videos");
+
       if (Array.isArray(response.data)) {
         setVideos(response.data);
         setError(null);
       } else {
         setError("Unexpected response format.");
       }
-    } catch {
+    } catch (err) {
       setError("Failed to fetch videos. Please try again later.");
     } finally {
       setLoading(false);
@@ -41,9 +42,9 @@ function Home() {
     document.body.removeChild(link);
   }, []);
 
-  const handleRemoved = (id: string) => {
-    setVideos((prev) => prev.filter((v) => v.id !== id));
-  };
+  const handleRemoved = useCallback((id: string) => {
+    setVideos((prev) => prev.filter((video) => video.id !== id));
+  }, []);
 
   return (
     <main className="min-h-screen p-6">
@@ -58,9 +59,9 @@ function Home() {
         </header>
 
         {loading ? (
-          <div className="flex justify-center items-center h-64">
+          <div className="flex justify-center items-center h-64 text-white">
             <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-            <span className="ml-2 text-gray-600">Loading videos...</span>
+            <span className="ml-2">Loading videos...</span>
           </div>
         ) : error ? (
           <div className="flex flex-col items-center justify-center text-red-600 mt-20">
@@ -87,6 +88,6 @@ function Home() {
       </div>
     </main>
   );
-}
+};
 
 export default Home;

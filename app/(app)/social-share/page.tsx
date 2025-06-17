@@ -20,7 +20,7 @@ export default function SocialShare() {
   const [selectedFormat, setSelectedFormat] = useState<SocialFormat>('Instagram Square (1:1)');
   const [isUploading, setIsUploading] = useState(false);
   const [isTransforming, setIsTransforming] = useState(false);
-  const imageRef = useRef<HTMLImageElement>(null);
+  const imageRef = useRef<HTMLImageElement | null>(null);
 
   const handleUploadFile = async (file: File) => {
     setIsUploading(true);
@@ -135,7 +135,7 @@ export default function SocialShare() {
               className="w-full max-w-md bg-black text-white border border-white rounded-md p-2"
             >
               {Object.keys(socialFormats).map((format) => (
-                <option key={format} value={format} className="text-white">
+                <option key={format} value={format}>
                   {format}
                 </option>
               ))}
@@ -157,12 +157,12 @@ export default function SocialShare() {
                 src={uploadedImage}
                 alt="transformed"
                 crop="fill"
-                aspectRatio={socialFormats[selectedFormat].aspectRatio}
                 gravity="auto"
-                ref={imageRef}
-                onLoad={() => setIsTransforming(false)}
+                aspectRatio={socialFormats[selectedFormat].aspectRatio}
                 className="rounded-md max-w-full h-auto"
                 sizes="100vw"
+                onLoad={() => setIsTransforming(false)}
+                ref={imageRef}
               />
             </div>
           </div>

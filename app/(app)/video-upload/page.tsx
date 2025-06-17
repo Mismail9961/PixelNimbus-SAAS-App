@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { Loader2 } from "lucide-react";
 
+type VideoQuality = "auto" | "high" | "medium" | "low";
+
 const MAX_FILE_SIZE = 60 * 1024 * 1024; // 60MB
 
 export default function VideoUpload() {
@@ -14,7 +16,7 @@ export default function VideoUpload() {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [enableEnhancement, setEnableEnhancement] = useState(true);
-  const [quality, setQuality] = useState<"auto" | "high" | "medium" | "low">("auto");
+  const [quality, setQuality] = useState<VideoQuality>("auto");
   const [generateThumbnail, setGenerateThumbnail] = useState(true);
   const [analyzeContent, setAnalyzeContent] = useState(true);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -59,16 +61,16 @@ export default function VideoUpload() {
 
   return (
     <div className="min-h-screen bg-black text-white py-10 px-6">
-      <div className="max-w-3xl mx-auto bg-black rounded-2xl p-8 shadow-xl ">
-        <h1 className="text-3xl font-bold mb-6 text-center text-white">Upload Your Video</h1>
+      <div className="max-w-3xl mx-auto bg-black rounded-2xl p-8 shadow-xl">
+        <h1 className="text-3xl font-bold mb-6 text-center">Upload Your Video</h1>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label htmlFor="title" className="text-sm mb-2 block text-white ">Title</label>
+            <label htmlFor="title" className="text-sm mb-2 block">Title</label>
             <input
               type="text"
               id="title"
-              className="w-full px-4 py-2 rounded-lg bg-white border border-gray-600 text-black "
+              className="w-full px-4 py-2 rounded-lg bg-white border border-gray-600 text-black"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
@@ -76,7 +78,7 @@ export default function VideoUpload() {
           </div>
 
           <div>
-            <label htmlFor="description" className="text-sm mb-2 block text-white">Description</label>
+            <label htmlFor="description" className="text-sm mb-2 block">Description</label>
             <textarea
               id="description"
               className="w-full px-4 py-2 rounded-lg bg-white border border-gray-600 text-black"
@@ -84,18 +86,18 @@ export default function VideoUpload() {
               onChange={(e) => setDescription(e.target.value)}
               rows={4}
               required
-            ></textarea>
+            />
           </div>
 
           <div>
-            <label htmlFor="file" className="text-sm mb-2 block text-white">Video File</label>
+            <label htmlFor="file" className="text-sm mb-2 block">Video File</label>
             <input
               type="file"
               id="file"
               accept="video/*"
               onChange={(e) => setFile(e.target.files?.[0] || null)}
               required
-              className="block w-full text-sm text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-white file:text-black hover:file:bg-black hover:file:text-white"
+              className="block w-full text-sm text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-semibold file:bg-white file:text-black hover:file:bg-black hover:file:text-white"
             />
             {file && (
               <p className="text-xs text-white mt-1">
@@ -107,25 +109,25 @@ export default function VideoUpload() {
           <div className="grid sm:grid-cols-2 gap-4">
             <label className="flex items-center space-x-2">
               <input type="checkbox" checked={enableEnhancement} onChange={(e) => setEnableEnhancement(e.target.checked)} />
-              <span className="text-sm text-white">Enable AI Enhancement</span>
+              <span className="text-sm">Enable AI Enhancement</span>
             </label>
 
             <label className="flex items-center space-x-2">
               <input type="checkbox" checked={generateThumbnail} onChange={(e) => setGenerateThumbnail(e.target.checked)} />
-              <span className="text-sm text-white">Generate AI Thumbnail</span>
+              <span className="text-sm">Generate AI Thumbnail</span>
             </label>
 
             <label className="flex items-center space-x-2">
               <input type="checkbox" checked={analyzeContent} onChange={(e) => setAnalyzeContent(e.target.checked)} />
-              <span className="text-sm text-white">Analyze Content</span>
+              <span className="text-sm">Analyze Content</span>
             </label>
 
             <div>
-              <label htmlFor="quality" className="text-sm mb-1 block text-white">Video Quality</label>
+              <label htmlFor="quality" className="text-sm mb-1 block">Video Quality</label>
               <select
                 id="quality"
                 value={quality}
-                onChange={(e) => setQuality(e.target.value as any)}
+                onChange={(e) => setQuality(e.target.value as VideoQuality)}
                 className="w-full px-3 py-2 bg-black text-white border border-gray-600 rounded-lg"
               >
                 <option value="auto">Auto (Recommended)</option>
