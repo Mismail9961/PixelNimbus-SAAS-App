@@ -1,21 +1,20 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server"; // ✅ CORRECT
 
 const prisma = new PrismaClient();
 
 export async function GET() {
   try {
-    const { userId: clerkId } = await auth();
-    if (!clerkId) {
+    const { userId } = await auth(); // ✅ no req here
+
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const videos = await prisma.video.findMany({
       where: {
-        user: {
-          clerkId,
-        },
+        userId, // Make sure your schema matches
       },
       orderBy: {
         createdAt: "desc",
