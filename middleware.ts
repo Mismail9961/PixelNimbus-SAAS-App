@@ -1,10 +1,11 @@
-import { auth, clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
 const isPublicPage = createRouteMatcher(["/", "/home", "/sign-in", "/sign-up"]);
 
-export default clerkMiddleware(async (auth, req) => {
-  const { userId } = await auth();
+export default clerkMiddleware((auth, req) => {
+  const { userId } = auth();
+
   const url = new URL(req.url);
   const pathname = url.pathname;
   const isApi = pathname.startsWith("/api");
@@ -21,10 +22,7 @@ export default clerkMiddleware(async (auth, req) => {
     }
 
     if (isApi) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
   }
 
