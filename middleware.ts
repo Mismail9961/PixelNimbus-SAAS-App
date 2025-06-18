@@ -1,40 +1,36 @@
-export interface Video {
-  id: string;
-  title: string;
-  description: string;
-  publicId: string;
-  originalSize: string;     // size in string, e.g., "25MB"
-  compressedSize: string;   // e.g., "10MB"
-  duration: number;         // in seconds
-  createdAt: Date;
-  updatedAt: Date;
-  url: string;
-  userId: string;
+import { auth, clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
 
-  metadata?: {
-    processingOptions: {
-      enableEnhancement: boolean;
-      quality: 'auto' | 'high' | 'medium' | 'low';
-      generateThumbnail: boolean;
-      analyzeContent: boolean;
-    };
-    aiMetadata: {
-      quality: string;
-      hasEnhancement: boolean;
-      hasThumbnail: boolean;
-      hasContentAnalysis: boolean;
-      tags?: string[];
-      moderation?: Record<string, unknown>;  // safer than `any`
-      faces?: Array<{
-        x: number;
-        y: number;
-        width: number;
-        height: number;
-      }>;
-    };
-    transformations: Array<{
-      type: string;
-      value: string;
-    }>;
-  };
-}
+const isPublicPage = createRouteMatcher(["/", "/home", "/sign-in", "/sign-up"]);
+
+export default clerkMiddleware(async (auth, req) => {
+  const { userId } = await auth();
+  const url = new URL(req.url);
+  const pathname = url.pathname;
+  const isApi = pathname.startsWith("/api");
+
+  // Redirect signed-in users from "/" to "/home"
+  if (userId && pathname === "/") {
+    return NextResponse.redirect(new URL("/home", req.url));
+  }
+
+  // Unauthenticated user access control
+  if (!userId) {
+    if (!isApi && !isPublicPage(req)) {
+      return NextResponse.redirect(new URL("/sign-in", req.url));
+    }
+
+    if (isApi) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+  }
+
+  return NextResponse.next();
+});
+
+export const config = {
+  matcher: ["/((?!.*\\..*|_next).*)", "/", "/api/(.*)"],
+};

@@ -1,34 +1,16 @@
-export interface ModerationResult {
-  status: string;
-  flagged: boolean;
-  reasons?: string[];
-}
-
-export interface FaceData {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  confidence?: number;
-}
-
-export interface Transformation {
-  type: string;
-  value: string | number | boolean;
-}
-
 export interface Video {
   id: string;
   title: string;
   description: string;
   publicId: string;
-  originalSize: string;
-  compressedSize: string;
-  duration: number;
+  originalSize: string;     // size in string, e.g., "25MB"
+  compressedSize: string;   // e.g., "10MB"
+  duration: number;         // in seconds
   createdAt: Date;
-  url: string;
   updatedAt: Date;
+  url: string;
   userId: string;
+
   metadata?: {
     processingOptions: {
       enableEnhancement: boolean;
@@ -42,9 +24,17 @@ export interface Video {
       hasThumbnail: boolean;
       hasContentAnalysis: boolean;
       tags?: string[];
-      moderation?: ModerationResult;
-      faces?: FaceData[];
+      moderation?: Record<string, unknown>;  // safer than `any`
+      faces?: Array<{
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+      }>;
     };
-    transformations: Transformation[];
+    transformations: Array<{
+      type: string;
+      value: string;
+    }>;
   };
 }
