@@ -23,21 +23,6 @@ interface VideoCardProps {
   onRemoved: (id: string) => void;
 }
 
-const Tooltip = ({
-  text,
-  children,
-}: {
-  text: string;
-  children: React.ReactNode;
-}) => (
-  <span className="relative group cursor-pointer">
-    {children}
-    <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-max max-w-xs bg-white text-black text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition pointer-events-none z-50">
-      {text}
-    </span>
-  </span>
-);
-
 const VideoCard: React.FC<VideoCardProps> = ({
   video,
   onDownload,

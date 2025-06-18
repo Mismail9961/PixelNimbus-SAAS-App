@@ -2,7 +2,7 @@ import { NextResponse, NextRequest } from "next/server";
 import { v2 as cloudinary } from "cloudinary";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { getOrCreateUser } from "@/lib/getOrCreateUser";
-import sharp from "sharp";
+import sharp, { Metadata } from "sharp";
 import crypto from "crypto";
 
 interface CloudinaryUploadResult {
@@ -115,10 +115,11 @@ function validateImageFile(file: File): { isValid: boolean; error?: string } {
   return { isValid: true };
 }
 
+
 async function preprocessImage(
   buffer: Buffer,
   options: ImageProcessingOptions = {}
-): Promise<{ processedBuffer: Buffer; metadata: unknown }> {
+): Promise<{ processedBuffer: Buffer; metadata: Metadata }> {
   const {
     quality = 85,
     maxWidth = 2048,
@@ -127,7 +128,7 @@ async function preprocessImage(
   } = options;
 
   let sharpInstance = sharp(buffer);
-  const metadata = await sharpInstance.metadata();
+  const metadata = await sharpInstance.metadata(); // ✅ used below in return
 
   if (!enableOptimization) {
     return { processedBuffer: buffer, metadata };
@@ -148,7 +149,7 @@ async function preprocessImage(
     .jpeg({ quality, progressive: true, mozjpeg: true })
     .toBuffer();
 
-  console.log("Image metadata:", metadata);
+  console.log("Image metadata:", metadata); // Optional: useful during dev
 
   return { processedBuffer, metadata };
 }

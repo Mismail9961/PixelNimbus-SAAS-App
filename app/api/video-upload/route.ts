@@ -61,7 +61,7 @@ async function processVideoWithAI(
   } = options;
 
   return {
-    processedBuffer: buffer,
+    processedBuffer: buffer, // Placeholder – replace with actual processing logic later
     metadata: {
       quality,
       hasEnhancement: enableEnhancement,
@@ -189,8 +189,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         let offset = 0;
 
         const writeChunk = () => {
-          const chunk = buffer.slice(offset, offset + chunkSize);
-          const isLastChunk = offset + chunkSize >= buffer.length;
+          const chunk = processedBuffer.slice(offset, offset + chunkSize); // ✅ USE processedBuffer
+          const isLastChunk = offset + chunkSize >= processedBuffer.length;
 
           uploadStream.write(chunk, (err: unknown) => {
             if (err) return reject(err);
