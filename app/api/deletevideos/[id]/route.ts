@@ -1,20 +1,17 @@
-import { NextRequest,NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
 export async function DELETE(
   request: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Record<string, string> } // ✅ Correct typing
 ) {
-  const { id } = context.params;
+  const id = context.params.id;
 
   try {
-    if (!id || typeof id !== "string") {
-      return NextResponse.json(
-        { error: "Invalid video ID" },
-        { status: 400 }
-      );
+    if (!id) {
+      return NextResponse.json({ error: "Invalid video ID" }, { status: 400 });
     }
 
     await prisma.video.delete({
@@ -22,16 +19,11 @@ export async function DELETE(
     });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    const err = error as { code?: string; message?: string };
+  } catch (error: any) {
+    console.error("Delete failed:", error?.message || error);
 
-    console.error("Delete failed:", err.message || err);
-
-    if (err.code === "P2025") {
-      return NextResponse.json(
-        { error: "Video not found" },
-        { status: 404 }
-      );
+    if (error?.code === "P2025") {
+      return NextResponse.json({ error: "Video not found" }, { status: 404 });
     }
 
     return NextResponse.json(
