@@ -10,7 +10,6 @@ export async function DELETE(
   try {
     const { id } = params;
 
-    // Optional: validate UUID format (if your id is UUID)
     if (!id || typeof id !== "string") {
       return NextResponse.json(
         { error: "Invalid video ID" },
@@ -18,17 +17,17 @@ export async function DELETE(
       );
     }
 
-    // Delete the video from the database
     await prisma.video.delete({
       where: { id },
     });
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    console.error("Delete failed:", error);
+  } catch (error) {
+    const err = error as { code?: string; message?: string };
 
-    if (error.code === "P2025") {
-      // Prisma error when record doesn't exist
+    console.error("Delete failed:", err.message || err);
+
+    if (err.code === "P2025") {
       return NextResponse.json(
         { error: "Video not found" },
         { status: 404 }
@@ -41,4 +40,3 @@ export async function DELETE(
     );
   }
 }
-

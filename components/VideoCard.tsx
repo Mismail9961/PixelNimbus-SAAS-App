@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { getCldImageUrl, getCldVideoUrl } from "next-cloudinary";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   Download,
   Clock,
-  FileDown,
   FileUp,
   Trash2,
   Info,
-  Image,
+  Image as ImageIcon,
 } from "lucide-react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -23,7 +23,6 @@ interface VideoCardProps {
   onRemoved: (id: string) => void;
 }
 
-// Tooltip remains the same
 const Tooltip = ({
   text,
   children,
@@ -42,7 +41,7 @@ const Tooltip = ({
 const VideoCard: React.FC<VideoCardProps> = ({
   video,
   onDownload,
-  onRemoved, // now destructured
+  onRemoved,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [previewError, setPreviewError] = useState(false);
@@ -125,12 +124,11 @@ const VideoCard: React.FC<VideoCardProps> = ({
     try {
       setIsDeleting(true);
       const res = await fetch(`/api/deleteVideos/${video.id}`, {
-        // ensure file matches case
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
       });
       if (!res.ok) throw new Error("Failed to delete video");
-      onRemoved(video.id); // invoke callback after delete
+      onRemoved(video.id);
       router.refresh();
     } catch (err) {
       console.error("Delete error:", err);
@@ -190,9 +188,11 @@ const VideoCard: React.FC<VideoCardProps> = ({
             onError={() => setPreviewError(true)}
           />
         ) : (
-          <img
+          <Image
             src={getThumbnailUrl(video.publicId)}
-            alt={video.title}
+            alt={`Thumbnail for ${video.title}`}
+            width={400}
+            height={225}
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         )}
@@ -278,12 +278,14 @@ const VideoCard: React.FC<VideoCardProps> = ({
         {video.metadata?.processingOptions?.generateThumbnail && (
           <div className="mt-4">
             <h4 className="font-semibold mb-2 flex items-center text-white">
-              <Image size={16} className="mr-2" />
+              <ImageIcon size={16} className="mr-2" />
               Generated Thumbnail
             </h4>
-            <img
+            <Image
               src={getThumbnailUrl(video.publicId)}
-              alt="Generated Thumbnail"
+              alt={`Generated thumbnail for ${video.title}`}
+              width={400}
+              height={225}
               className="w-full h-48 object-cover rounded-lg border border-white/20 shadow-lg"
             />
           </div>
@@ -408,7 +410,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
                 </>
               ) : (
                 <>
-                  <Image size={16} />
+                  <ImageIcon size={16} />
                   <span className="ml-2">Thumbnail</span>
                 </>
               )}

@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { CldImage } from 'next-cloudinary';
 import { ArrowDownCircle, UploadCloud, Loader2 } from 'lucide-react';
+import Image from 'next/image';
 
 const socialFormats = {
   'Instagram Square (1:1)': { width: 1080, height: 1080, aspectRatio: '1:1' },
@@ -115,7 +116,7 @@ export default function SocialShare() {
       {previewURL && !uploadedImage && (
         <div className="mt-4">
           <p className="text-sm text-white">Preview:</p>
-          <img
+          <Image
             src={previewURL}
             alt="preview"
             className="w-60 h-auto mt-2 rounded-md border border-white mx-auto"

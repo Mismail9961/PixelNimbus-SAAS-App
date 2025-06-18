@@ -118,7 +118,7 @@ function validateImageFile(file: File): { isValid: boolean; error?: string } {
 async function preprocessImage(
   buffer: Buffer,
   options: ImageProcessingOptions = {}
-): Promise<{ processedBuffer: Buffer; metadata: any }> {
+): Promise<{ processedBuffer: Buffer; metadata: unknown }> {
   const {
     quality = 85,
     maxWidth = 2048,
@@ -147,6 +147,8 @@ async function preprocessImage(
   const processedBuffer = await sharpInstance
     .jpeg({ quality, progressive: true, mozjpeg: true })
     .toBuffer();
+
+  console.log("Image metadata:", metadata);
 
   return { processedBuffer, metadata };
 }
@@ -220,6 +222,7 @@ function generateImageUrls(publicId: string): {
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
+
   try {
     const { userId: clerkId } = await auth();
     if (!clerkId)
@@ -290,9 +293,14 @@ export async function POST(request: NextRequest) {
       ],
     };
 
+    console.log(`Image processed in ${Date.now() - startTime}ms`);
     return NextResponse.json(response, { status: 200 });
-  } catch (error: any) {
-    console.error("Upload failed:", error);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error("Upload failed:", error.message);
+    } else {
+      console.error("Upload failed:", error);
+    }
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }
@@ -334,8 +342,12 @@ export async function GET(request: NextRequest) {
       urls: imageUrls,
       context: result.context,
     });
-  } catch (error) {
-    console.error("Metadata fetch failed:", error);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error("Metadata fetch failed:", error.message);
+    } else {
+      console.error("Metadata fetch failed:", error);
+    }
     return NextResponse.json(
       { error: "Failed to fetch image metadata" },
       { status: 404 }

@@ -21,7 +21,7 @@ const Home = () => {
       } else {
         setError("Unexpected response format.");
       }
-    } catch (err) {
+    } catch {
       setError("Failed to fetch videos. Please try again later.");
     } finally {
       setLoading(false);

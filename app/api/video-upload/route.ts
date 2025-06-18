@@ -32,7 +32,7 @@ interface CloudinaryUploadResult {
   secure_url: string;
   bytes: number;
   duration?: number;
-  transformation?: any[];
+  transformation?: unknown[];
   [key: string]: unknown;
 }
 
@@ -52,7 +52,7 @@ const UPLOAD_CONSTRAINTS = {
 async function processVideoWithAI(
   buffer: Buffer,
   options: VideoProcessingOptions = {}
-): Promise<{ processedBuffer: Buffer; metadata: any }> {
+): Promise<{ processedBuffer: Buffer; metadata: Record<string, unknown> }> {
   const {
     enableEnhancement = true,
     quality = "auto",
@@ -145,6 +145,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: "Title is required" }, { status: 400 });
     }
 
+    if (file.size > UPLOAD_CONSTRAINTS.maxFileSize) {
+      return NextResponse.json({ error: "File too large" }, { status: 400 });
+    }
+
     const effectiveOriginalSize =
       originalSize && !isNaN(Number(originalSize))
         ? originalSize
@@ -188,9 +192,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           const chunk = buffer.slice(offset, offset + chunkSize);
           const isLastChunk = offset + chunkSize >= buffer.length;
 
-          uploadStream.write(chunk, (err) => {
+          uploadStream.write(chunk, (err: unknown) => {
             if (err) return reject(err);
-
             if (isLastChunk) {
               uploadStream.end();
             } else {
@@ -246,10 +249,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       },
       { status: 200 }
     );
-  } catch (err: any) {
-    console.error("Upload Video Failed:", err);
+  } catch (err) {
+    const error = err as { message?: string };
+    console.error("Upload Video Failed:", error.message || err);
     return NextResponse.json(
-      { error: `Upload failed: ${err.message || "Unknown error"}` },
+      { error: `Upload failed: ${error.message || "Unknown error"}` },
       { status: 500 }
     );
   }
