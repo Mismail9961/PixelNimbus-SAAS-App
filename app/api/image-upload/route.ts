@@ -254,7 +254,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
 
     const originalBuffer = Buffer.from(await file.arrayBuffer());
-    const { processedBuffer, metadata } = await preprocessImage(
+    const { processedBuffer,  } = await preprocessImage(
       originalBuffer,
       processingOptions
     );

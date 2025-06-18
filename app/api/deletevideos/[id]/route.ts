@@ -5,11 +5,11 @@ const prisma = new PrismaClient();
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
-  try {
-    const { id } = params;
+  const { id } = context.params;
 
+  try {
     if (!id || typeof id !== "string") {
       return NextResponse.json(
         { error: "Invalid video ID" },
